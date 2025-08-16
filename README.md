@@ -1,0 +1,1 @@
+# ffxiv-trial-title-generator
