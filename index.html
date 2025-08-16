@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF14風タイトル画面ジェネレーター</title>
+
+    <!-- Googleフォント -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #ffffff;
+            font-family: 'Noto Sans JP', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            background: linear-gradient(to bottom, #FFD700, #FF8C00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .controls {
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .input-group input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #444;
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input[type="text"]:focus {
+            outline: none;
+            border-color: #FFD700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .input-group input[type="file"] {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #333;
+            border-radius: 5px;
+            color: #ccc;
+            cursor: pointer;
+        }
+
+        .input-group small {
+            display: block;
+            margin-top: 5px;
+            color: #888;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #FFD700, #FF8C00);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #4169E1, #1E90FF);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(30, 144, 255, 0.3);
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 144, 255, 0.5);
+        }
+
+        .preview-area {
+            text-align: center;
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.1);
+        }
+
+        #genCanvas {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #444;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FF14風タイトル画面ジェネレーター</h1>
+
+        <div class="controls">
+            <div class="input-group">
+                <label for="textEn">英語タイトル:</label>
+                <input id="textEn" type="text" value="THE MINSTREL'S BALLAD: ULTIMA'S BANE" placeholder="英語タイトルを入力">
+            </div>
+
+            <div class="input-group">
+                <label for="textJp">日本語タイトル:</label>
+                <input id="textJp" type="text" value="究極幻想アルテマウェポン破壊作戦" placeholder="日本語タイトルを入力">
+            </div>
+
+            <div class="input-group">
+                <label for="bgUpload">背景画像:</label>
+                <input id="bgUpload" type="file" accept="image/*">
+                <small>※画像をアップロードしない場合はデフォルト背景を使用</small>
+            </div>
+
+            <button onclick="generate()" class="generate-btn">タイトル画面を生成</button>
+            <button onclick="saveImage()" class="save-btn" style="display:none;">画像を保存</button>
+        </div>
+
+        <div class="preview-area">
+            <canvas id="genCanvas" width="1920" height="1080"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let uploadedImage = null;
+
+        // 背景画像のアップロード処理
+        document.getElementById('bgUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        uploadedImage = img;
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // キャンバスに描画する関数
+        function generate() {
+            const canvas = document.getElementById("genCanvas");
+            const ctx = canvas.getContext("2d");
+
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 背景を描画
+            if (uploadedImage) {
+                // アップロードされた画像を使用
+                ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+            } else {
+                // デフォルトの背景（グラデーション）
+                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                gradient.addColorStop(0, '#0a0a0a');
+                gradient.addColorStop(0.5, '#1a1a2e');
+                gradient.addColorStop(1, '#0a0a0a');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // 装飾的な光の効果
+                const radialGradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, 600);
+                radialGradient.addColorStop(0, 'rgba(255, 215, 0, 0.1)');
+                radialGradient.addColorStop(1, 'rgba(255, 140, 0, 0)');
+                ctx.fillStyle = radialGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // 半透明の黒レイヤーを追加（テキストを見やすくするため）
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // テキストの取得
+            const textEn = document.getElementById("textEn").value;
+            const textJp = document.getElementById("textJp").value;
+
+            // 英語テキストの描画
+            ctx.save();
+
+            // 英語テキストのスタイル設定
+            ctx.font = "600 85px 'Cinzel'";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // 縁取り効果（複数重ねて豪華に）
+            ctx.shadowColor = "#000000";
+            ctx.shadowBlur = 20;
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 8;
+            ctx.strokeText(textEn, canvas.width/2, canvas.height/2 - 80);
+
+            // グラデーションテキスト
+            const textGradient = ctx.createLinearGradient(0, canvas.height/2 - 120, 0, canvas.height/2 - 40);
+            textGradient.addColorStop(0, '#FFD700');
+            textGradient.addColorStop(0.5, '#FFA500');
+            textGradient.addColorStop(1, '#FF8C00');
+
+            ctx.fillStyle = textGradient;
+            ctx.shadowColor = "#FFD700";
+            ctx.shadowBlur = 30;
+            ctx.fillText(textEn, canvas.width/2, canvas.height/2 - 80);
+
+            // 光彩効果を追加
+            ctx.globalCompositeOperation = 'screen';
+            ctx.shadowBlur = 50;
+            ctx.fillText(textEn, canvas.width/2, canvas.height/2 - 80);
+            ctx.globalCompositeOperation = 'source-over';
+
+            ctx.restore();
+
+            // 日本語テキストの描画
+            ctx.save();
+
+            // 日本語テキストのスタイル設定
+            ctx.font = "500 55px 'Noto Sans JP'";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // 縁取り効果
+            ctx.shadowColor = "#000000";
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 5;
+            ctx.strokeText(textJp, canvas.width/2, canvas.height/2 + 40);
+
+            // 白いテキスト with 金色の光彩
+            ctx.fillStyle = "#FFFFFF";
+            ctx.shadowColor = "#FFD700";
+            ctx.shadowBlur = 25;
+            ctx.fillText(textJp, canvas.width/2, canvas.height/2 + 40);
+
+            // 追加の光彩効果
+            ctx.globalCompositeOperation = 'screen';
+            ctx.shadowBlur = 40;
+            ctx.fillText(textJp, canvas.width/2, canvas.height/2 + 40);
+            ctx.globalCompositeOperation = 'source-over';
+
+            ctx.restore();
+
+            // 装飾的なライン
+            ctx.save();
+            ctx.strokeStyle = "#FFD700";
+            ctx.lineWidth = 2;
+            ctx.shadowColor = "#FFD700";
+            ctx.shadowBlur = 10;
+
+            // 上のライン
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2 - 400, canvas.height/2 - 160);
+            ctx.lineTo(canvas.width/2 + 400, canvas.height/2 - 160);
+            ctx.stroke();
+
+            // 下のライン
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2 - 300, canvas.height/2 + 100);
+            ctx.lineTo(canvas.width/2 + 300, canvas.height/2 + 100);
+            ctx.stroke();
+
+            ctx.restore();
+
+            // 保存ボタンを表示
+            document.querySelector('.save-btn').style.display = 'inline-block';
+        }
+
+        // 画像を保存する関数
+        function saveImage() {
+            const canvas = document.getElementById("genCanvas");
+            const link = document.createElement('a');
+            link.download = 'ff14-title.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // ページ読み込み時にデフォルトの画面を生成
+        window.addEventListener('load', function() {
+            // フォントが読み込まれるまで少し待つ
+            setTimeout(generate, 500);
+        });
+    </script>
+</body>
+</html>
